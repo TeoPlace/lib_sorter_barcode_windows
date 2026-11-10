@@ -48,7 +48,7 @@ $target = $release.tag_name -replace '^v', ''
 if ($Check) {
     if (-not $installed) { Write-Host "sorter-barcode non e' installato in $Dir; ultima versione: $target" }
     elseif ($installed -eq $target) { Write-Host "sorter-barcode ${installed}: e' l'ultima versione" }
-    else { Write-Host "sorter-barcode $installed installato, c'e' la $target: rilancia il comando di installazione per aggiornare" }
+    else { Write-Host "sorter-barcode $installed installato, c'e' la ${target}: rilancia il comando di installazione per aggiornare" }
     return
 }
 
@@ -90,9 +90,17 @@ if (-not $NoPath) {
         [Environment]::SetEnvironmentVariable('Path', ((@($p -split ';' | Where-Object { $_ }) + $pathEntry) -join ';'), 'User')
         Write-Host "$pathEntry aggiunto al PATH dell'utente"
     }
-    # anche in questo terminale, per provarlo subito
-    if (-not ($env:Path -split ';' -contains $pathEntry)) { $env:Path = "$env:Path;$pathEntry" }
-    Write-Host "Per leggere un'immagine:  sorter-barcode C:\percorso\immagine.bmp"
+    # anche in questo terminale, per provarlo subito (davanti, cosi' vince su altre copie)
+    if (-not ($env:Path -split ';' -contains $pathEntry)) { $env:Path = "$pathEntry;$env:Path" }
+    # il PATH di sistema viene prima di quello dell'utente: un altro sorter-barcode li' vince nei terminali nuovi
+    $other = [Environment]::GetEnvironmentVariable('Path', 'Machine') -split ';' |
+        Where-Object { $_ -and (Test-Path (Join-Path $_ 'sorter-barcode.exe')) } | Select-Object -First 1
+    if ($other) {
+        Write-Host "Attenzione: nei terminali nuovi 'sorter-barcode' e' quello in $other (PATH di sistema, viene prima)."
+        Write-Host "Per usare questo:  & '$pathEntry\sorter-barcode.exe' C:\percorso\immagine.bmp"
+    } else {
+        Write-Host "Per leggere un'immagine:  sorter-barcode C:\percorso\immagine.bmp"
+    }
 } else {
     Write-Host "Per leggere un'immagine:  & '$pathEntry\sorter-barcode.exe' C:\percorso\immagine.bmp"
 }
