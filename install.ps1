@@ -1,18 +1,20 @@
-# Installs or updates lib_sorter_barcode from the GitHub releases. Running it again updates to the
-# latest version; it does nothing when the installed one is already the latest.
+# Installa o aggiorna sorter-barcode (il comando e la libreria) dalle release su GitHub.
+# Rilanciato, aggiorna all'ultima versione; se e' gia' l'ultima non fa niente.
 #
 #   irm https://raw.githubusercontent.com/TeoPlace/lib_sorter_barcode_windows/main/install.ps1 | iex
 #
-# With options (folder, a specific version, PATH, check only):
-#   & ([scriptblock]::Create((irm https://raw.githubusercontent.com/TeoPlace/lib_sorter_barcode_windows/main/install.ps1))) -Dir C:\lib\sorter_barcode -AddToPath
-#   .\install.ps1 [-Dir <folder>] [-Version 1.1.1] [-AddToPath] [-Check] [-Uninstall]
+# Con le opzioni:
+#   & ([scriptblock]::Create((irm https://raw.githubusercontent.com/TeoPlace/lib_sorter_barcode_windows/main/install.ps1))) -Check
+#   .\install.ps1 [-Dir <cartella>] [-Version 1.1.2] [-NoPath] [-Check] [-Uninstall]
 #
-# Default folder: %LOCALAPPDATA%\Programs\sorter_barcode (no administrator rights needed).
-# Works with Windows PowerShell 5.1 and PowerShell 7.
+# Cartella predefinita: %LOCALAPPDATA%\Programs\sorter_barcode (senza diritti di amministratore).
+# La cartella bin\x64 va nel PATH dell'utente, cosi' sorter-barcode si lancia da qualunque terminale.
+# Funziona con Windows PowerShell 5.1 e PowerShell 7.
 param(
     [string]$Dir = (Join-Path $env:LOCALAPPDATA 'Programs\sorter_barcode'),
     [string]$Version = '',
-    [switch]$AddToPath,
+    [switch]$NoPath,
+    [switch]$AddToPath,   # 1.1.1: ora il PATH e' il comportamento normale, resta per i comandi gia' scritti
     [switch]$Check,
     [switch]$Uninstall
 )
@@ -33,7 +35,7 @@ if ($Uninstall) {
     if ($p -and ($p -split ';' -contains $pathEntry)) {
         [Environment]::SetEnvironmentVariable('Path', (($p -split ';' | Where-Object { $_ -and $_ -ne $pathEntry }) -join ';'), 'User')
     }
-    Write-Host "sorter_barcode removed from $Dir"
+    Write-Host "sorter-barcode rimosso da $Dir"
     return
 }
 
@@ -44,18 +46,18 @@ $release = Invoke-RestMethod -Uri $api -Headers @{ 'User-Agent' = 'lib_sorter_ba
 $target = $release.tag_name -replace '^v', ''
 
 if ($Check) {
-    if (-not $installed) { Write-Host "not installed in $Dir; latest version: $target" }
-    elseif ($installed -eq $target) { Write-Host "sorter_barcode ${installed}: up to date" }
-    else { Write-Host "sorter_barcode $installed installed, $target available: run the script again to update" }
+    if (-not $installed) { Write-Host "sorter-barcode non e' installato in $Dir; ultima versione: $target" }
+    elseif ($installed -eq $target) { Write-Host "sorter-barcode ${installed}: e' l'ultima versione" }
+    else { Write-Host "sorter-barcode $installed installato, c'e' la $target: rilancia il comando di installazione per aggiornare" }
     return
 }
 
 if ($installed -eq $target) {
-    Write-Host "sorter_barcode $installed is already installed in $Dir"
+    Write-Host "sorter-barcode $installed e' gia' installato in $Dir"
 } else {
     $zipUrl = ($release.assets | Where-Object { $_.name -eq $asset }).browser_download_url
     $sumUrl = ($release.assets | Where-Object { $_.name -eq "$asset.sha256" }).browser_download_url
-    if (-not $zipUrl) { throw "release $($release.tag_name) has no $asset" }
+    if (-not $zipUrl) { throw "la release $($release.tag_name) non contiene $asset" }
 
     $tmp = Join-Path ([IO.Path]::GetTempPath()) ("sorter_barcode-" + [Guid]::NewGuid().ToString('N'))
     New-Item -ItemType Directory $tmp | Out-Null
@@ -63,14 +65,14 @@ if ($installed -eq $target) {
         $zip = Join-Path $tmp $asset
         Invoke-WebRequest -Uri $zipUrl -OutFile $zip -UseBasicParsing
         if ($sumUrl) {
-            # to a file: GitHub serves the .sha256 as binary, so .Content would be bytes
+            # su file: GitHub serve il .sha256 come binario, quindi .Content sarebbero byte
             Invoke-WebRequest -Uri $sumUrl -OutFile "$zip.sha256" -UseBasicParsing
             $expected = ((Get-Content "$zip.sha256" -Raw).Trim() -split '\s+')[0].ToLower()
             $actual = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
-            if ($expected -ne $actual) { throw "SHA-256 mismatch for $asset (expected $expected, got $actual)" }
+            if ($expected -ne $actual) { throw "SHA-256 diverso per $asset (atteso $expected, trovato $actual)" }
         }
         Expand-Archive $zip -DestinationPath (Join-Path $tmp 'x') -Force
-        # replace the whole folder, so files removed in the new version do not stay behind
+        # si sostituisce tutta la cartella, cosi' i file tolti nella versione nuova non restano
         if (Test-Path $Dir) { Remove-Item $Dir -Recurse -Force }
         New-Item -ItemType Directory -Force (Split-Path $Dir) | Out-Null
         Move-Item (Join-Path $tmp 'x') $Dir
@@ -78,15 +80,19 @@ if ($installed -eq $target) {
         Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
     }
 
-    if ($installed) { Write-Host "sorter_barcode updated from $installed to $target in $Dir" }
-    else { Write-Host "sorter_barcode $target installed in $Dir" }
+    if ($installed) { Write-Host "sorter-barcode aggiornato dalla $installed alla $target in $Dir" }
+    else { Write-Host "sorter-barcode $target installato in $Dir" }
 }
 
-if ($AddToPath) {
+if (-not $NoPath) {
     $p = Get-UserPath
     if (-not ($p -split ';' -contains $pathEntry)) {
         [Environment]::SetEnvironmentVariable('Path', ((@($p -split ';' | Where-Object { $_ }) + $pathEntry) -join ';'), 'User')
-        Write-Host "$pathEntry added to the user PATH (open a new terminal)"
+        Write-Host "$pathEntry aggiunto al PATH dell'utente"
     }
+    # anche in questo terminale, per provarlo subito
+    if (-not ($env:Path -split ';' -contains $pathEntry)) { $env:Path = "$env:Path;$pathEntry" }
+    Write-Host "Per leggere un'immagine:  sorter-barcode C:\percorso\immagine.bmp"
+} else {
+    Write-Host "Per leggere un'immagine:  & '$pathEntry\sorter-barcode.exe' C:\percorso\immagine.bmp"
 }
-Write-Host "DLL: $pathEntry\sorter_barcode.dll (32 bit: $Dir\bin\x86)"
