@@ -63,7 +63,9 @@ if ($installed -eq $target) {
         $zip = Join-Path $tmp $asset
         Invoke-WebRequest -Uri $zipUrl -OutFile $zip -UseBasicParsing
         if ($sumUrl) {
-            $expected = ((Invoke-WebRequest -Uri $sumUrl -UseBasicParsing).Content -split '\s+')[0].Trim().ToLower()
+            # to a file: GitHub serves the .sha256 as binary, so .Content would be bytes
+            Invoke-WebRequest -Uri $sumUrl -OutFile "$zip.sha256" -UseBasicParsing
+            $expected = ((Get-Content "$zip.sha256" -Raw).Trim() -split '\s+')[0].ToLower()
             $actual = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
             if ($expected -ne $actual) { throw "SHA-256 mismatch for $asset (expected $expected, got $actual)" }
         }
