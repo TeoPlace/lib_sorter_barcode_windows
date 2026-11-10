@@ -92,12 +92,22 @@ if (-not $NoPath) {
     }
     # anche in questo terminale, per provarlo subito (davanti, cosi' vince su altre copie)
     if (-not ($env:Path -split ';' -contains $pathEntry)) { $env:Path = "$pathEntry;$env:Path" }
-    # il PATH di sistema viene prima di quello dell'utente: un altro sorter-barcode li' vince nei terminali nuovi
+    # il PATH di sistema viene prima di quello dell'utente: un altro sorter-barcode li' vince nei terminali nuovi.
+    # Va bene se e' aggiornato (per esempio quello dell'app SorterBarcode); le versioni vecchie non hanno --version.
     $other = [Environment]::GetEnvironmentVariable('Path', 'Machine') -split ';' |
         Where-Object { $_ -and (Test-Path (Join-Path $_ 'sorter-barcode.exe')) } | Select-Object -First 1
+    $otherVersion = $null
     if ($other) {
-        Write-Host "Attenzione: nei terminali nuovi 'sorter-barcode' e' quello in $other (PATH di sistema, viene prima)."
-        Write-Host "Per usare questo:  & '$pathEntry\sorter-barcode.exe' C:\percorso\immagine.bmp"
+        $ErrorActionPreference = 'Continue'
+        $out = & (Join-Path $other 'sorter-barcode.exe') --version 2>$null
+        $ErrorActionPreference = 'Stop'
+        if ("$out" -match 'sorter-barcode (\d+\.\d+\.\d+)') { $otherVersion = $Matches[1] }
+    }
+    if ($other -and -not ($otherVersion -and [version]$otherVersion -ge [version]$target)) {
+        $what = if ($otherVersion) { "la $otherVersion" } else { 'una versione vecchia' }
+        Write-Host "Attenzione: nei terminali nuovi 'sorter-barcode' e' $what in $other (PATH di sistema, viene prima)."
+        Write-Host "Per sistemarlo: disinstalla quel programma da Impostazioni > App > App installate, o aggiornalo."
+        Write-Host "Intanto:  & '$pathEntry\sorter-barcode.exe' C:\percorso\immagine.bmp"
     } else {
         Write-Host "Per leggere un'immagine:  sorter-barcode C:\percorso\immagine.bmp"
     }
