@@ -5,7 +5,7 @@
 #
 # Con le opzioni:
 #   & ([scriptblock]::Create((irm https://raw.githubusercontent.com/TeoPlace/lib_sorter_barcode_windows/main/install.ps1))) -Check
-#   .\install.ps1 [-Dir <cartella>] [-Version 1.1.2] [-NoPath] [-Check] [-Uninstall]
+#   .\install.ps1 [-Dir <cartella>] [-Version 1.2.0] [-NoPath] [-Check] [-Uninstall]
 #
 # Cartella predefinita: %LOCALAPPDATA%\Programs\sorter_barcode (senza diritti di amministratore).
 # La cartella bin\x64 va nel PATH dell'utente, cosi' sorter-barcode si lancia da qualunque terminale.
@@ -107,10 +107,10 @@ if (-not $NoPath) {
         $what = if ($otherVersion) { "la $otherVersion" } else { 'una versione vecchia' }
         Write-Host "Attenzione: nei terminali nuovi 'sorter-barcode' e' $what in $other (PATH di sistema, viene prima)."
         Write-Host "Per sistemarlo: disinstalla quel programma da Impostazioni > App > App installate, o aggiornalo."
-        Write-Host "Intanto:  & '$pathEntry\sorter-barcode.exe' C:\percorso\immagine.bmp"
+        Write-Host "Intanto:  & '$pathEntry\sorter-barcode.exe' C:\percorso\lettera.pdf"
     } else {
-        Write-Host "Per leggere un'immagine:  sorter-barcode C:\percorso\immagine.bmp"
+        Write-Host "Per leggere un file:  sorter-barcode C:\percorso\lettera.pdf"
     }
 } else {
-    Write-Host "Per leggere un'immagine:  & '$pathEntry\sorter-barcode.exe' C:\percorso\immagine.bmp"
+    Write-Host "Per leggere un file:  & '$pathEntry\sorter-barcode.exe' C:\percorso\lettera.pdf"
 }
