@@ -6,17 +6,46 @@ Libreria per leggere i barcode dalle immagini del sorter: **Code 128, Code 39, I
 - DLL nativa, senza dipendenze (solo `kernel32` e `msvcrt`, presenti in ogni Windows)
 - 64 bit (`bin/x64`) e 32 bit (`bin/x86`)
 - thread safe: si possono leggere più immagini in parallelo
-- versione **1.1.1**
+- versione **1.1.1** (le versioni sono i tag `v…` e le [release](https://github.com/TeoPlace/lib_sorter_barcode_windows/releases))
 
 La versione per Linux è in [lib_sorter_barcode_linux](https://github.com/TeoPlace/lib_sorter_barcode_linux).
 
-## Installazione
+## Installazione e aggiornamento
+
+**Dal terminale (PowerShell)**, senza diritti di amministratore:
+
+```powershell
+irm https://raw.githubusercontent.com/TeoPlace/lib_sorter_barcode_windows/main/install.ps1 | iex
+```
+
+Installa l'ultima versione in `%LOCALAPPDATA%\Programs\sorter_barcode`. **Per aggiornare si rilancia lo stesso comando**:
+scarica la versione nuova solo se c'è, e ne controlla lo SHA-256. Con le opzioni:
+
+```powershell
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/TeoPlace/lib_sorter_barcode_windows/main/install.ps1))) -AddToPath
+```
+
+| opzione | cosa fa |
+|---|---|
+| `-Dir <cartella>` | installa altrove |
+| `-Version 1.1.1` | installa quella versione invece dell'ultima |
+| `-AddToPath` | aggiunge `bin\x64` al PATH dell'utente |
+| `-Check` | dice solo se c'è un aggiornamento |
+| `-Uninstall` | toglie la cartella (e la voce del PATH) |
+
+**Con git**, una versione per tag (`v1.1.1`, …):
 
 ```
 git clone https://github.com/TeoPlace/lib_sorter_barcode_windows.git
+git -C lib_sorter_barcode_windows pull            # aggiorna all'ultima
+git -C lib_sorter_barcode_windows checkout v1.1.1 # oppure fissa una versione
 ```
 
-Non c'è altro da fare: la DLL va messa accanto al proprio programma (o in una cartella del `PATH`).
+**Download diretto** dell'ultima versione (zip con DLL, header ed esempi):
+[lib_sorter_barcode_windows.zip](https://github.com/TeoPlace/lib_sorter_barcode_windows/releases/latest/download/lib_sorter_barcode_windows.zip)
+· tutte le versioni nelle [release](https://github.com/TeoPlace/lib_sorter_barcode_windows/releases).
+
+La DLL va accanto al proprio programma, o in una cartella del `PATH`.
 
 | file | a cosa serve |
 |---|---|
@@ -27,6 +56,7 @@ Non c'è altro da fare: la DLL va messa accanto al proprio programma (o in una c
 | `bin/*/sorter_barcode.def` | elenco delle funzioni esportate |
 | `include/sorter_barcode.h` | l'header C |
 | `examples/` | esempi in C e Python |
+| `VERSION` | la versione |
 
 ## Le funzioni
 
@@ -88,6 +118,13 @@ string json = Encoding.UTF8.GetString(buffer, 0, Array.IndexOf(buffer, (byte)0))
 ```
 python examples\leggi.py C:\immagini\lettera.bmp
 ```
+
+## Pubblicare una versione nuova
+
+1. Ricostruire la libreria dal sorgente, sostituire i file in `bin/` (o `lib/`) e scrivere la versione in `VERSION`.
+2. `git commit`, `git tag v<versione>`, `git push --follow-tags`.
+3. Creare la release `v<versione>` con il pacchetto e il suo `.sha256` (stesso nome di file a ogni versione, così
+   il link «latest» e lo script di installazione trovano sempre l'ultima).
 
 ## Licenza
 
