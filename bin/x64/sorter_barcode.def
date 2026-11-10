@@ -1,0 +1,4 @@
+EXPORTS
+    sb_read_bmp_file @1
+    sb_read_gray @2
+    sb_version @3
